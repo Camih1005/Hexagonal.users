@@ -48,7 +48,7 @@ public class UserRepository implements UserService {
         }
         
        } catch (SQLException e) {
-        // TODO Auto-generated catch block
+        
         e.printStackTrace();
     }
     return user;
@@ -56,13 +56,71 @@ public class UserRepository implements UserService {
     }
 
     @Override
-    public User updateById(Long id) {
-        String sql = "UPDATE users" + 
-                        "SET  = ?" + 
-                        "where id =  ? ";
+    public User updateById(Long id, String newName, String newEmail) {
+        String sql = "UPDATE users SET name = ?, email = ? WHERE id = ?";
+        try (Connection connection = DataBaseConfig.getConecction();PreparedStatement statement = connection.prepareStatement(sql)) {
 
+            statement.setString(1, newName);
+            statement.setString(2, newEmail);
+            statement.setLong(3, id);
 
+            int rowsUpdated = statement.executeUpdate();
+            if (rowsUpdated > 0) {
+                return findUserById(id); 
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
         return null;
+    }
+
+    @Override
+    public User deleteById(Long id) {
+        String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection connection = DataBaseConfig.getConecction();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setLong(1, id);
+            int rowsDeleted = statement.executeUpdate();
+            
+            if (rowsDeleted > 0) {
+                System.out.println("Usuario con ID " + id + " eliminado correctamente.");
+          
+            } else {
+                System.out.println("No se encontró ningún usuario con ID " + id + " para eliminar.");
+            }
+    
+        } catch (SQLException e) {
+            System.out.println("error try : " + e);
+    
+        }
+        
+        return null;
+    }
+
+    @Override
+    public User listUserbyName(String name) {
+        String sql = "SELECT id, name, email FROM users WHERE name LIKE ?";
+        try (Connection connection = DataBaseConfig.getConecction();
+             PreparedStatement statement = connection.prepareStatement(sql)) {
+            
+            statement.setString(1, "%" + name + "%"); 
+            
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    User user = new User();
+                    user.setId(resultSet.getLong("id"));
+                    user.setName(resultSet.getString("name"));
+                    user.setEmail(resultSet.getString("email"));
+                    return user; 
+                }
+            }
+        } catch (SQLException e) {
+            System.out.println("Error al buscar usuario por nombre: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return null; 
     }
     
 }
